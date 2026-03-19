@@ -30,12 +30,12 @@ export function ProjectTabs({ project, partidas, dailyProgress, alerts }: Props)
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 mb-6 p-1 rounded-xl bg-surface-900/50 border border-accent-400/10 w-fit">
+      <div className="flex items-center gap-1 mb-6 p-1 rounded-xl bg-surface-900/50 border border-accent-400/10 w-full overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === tab.id
                 ? 'bg-accent-400/15 text-accent-400 shadow-sm'
                 : 'text-surface-200/60 hover:text-surface-200/80 hover:bg-surface-700/30'

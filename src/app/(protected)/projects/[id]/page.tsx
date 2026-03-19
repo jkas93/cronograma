@@ -63,16 +63,16 @@ export default async function ProjectPage({ params }: Props) {
     .limit(20);
 
   return (
-    <div className="p-8 max-w-full mx-auto fade-in">
+    <div className="p-4 md:p-8 max-w-full mx-auto fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6">
         <div>
           <div className="flex items-center gap-2 text-sm text-surface-200/50 mb-2">
             <Link href="/dashboard" className="hover:text-accent-400 transition-colors">
               Dashboard
             </Link>
             <span>/</span>
-            <span className="text-surface-200/80">{project.name}</span>
+            <span className="text-surface-200/80 truncate max-w-[150px] md:max-w-xs">{project.name}</span>
           </div>
           <h1 className="text-2xl font-bold text-surface-100">{project.name}</h1>
           {project.description && (
@@ -80,17 +80,19 @@ export default async function ProjectPage({ params }: Props) {
           )}
         </div>
 
-        {/* Share link */}
-        <div className="flex items-center gap-3">
-          <div className="text-xs text-surface-200/40">
+        {/* Share link / Actions */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="text-[11px] md:text-xs text-surface-200/40 bg-surface-900/30 px-3 py-1.5 rounded-md border border-surface-700/30 flex-shrink-0">
             <span className="font-medium">Período:</span>{' '}
-            {project.start_date} → {project.end_date}
+            {project.start_date} <span className="text-accent-400/70">→</span> {project.end_date}
           </div>
+          
           <DeleteProjectButton projectId={project.id} projectName={project.name} />
+          
           <Link
             href={`/share/${project.share_token}`}
             target="_blank"
-            className="btn-secondary text-xs flex items-center gap-2"
+            className="btn-secondary text-xs flex items-center gap-2 flex-shrink-0"
             title="Abrir vista pública del proyecto"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

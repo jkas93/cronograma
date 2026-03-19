@@ -359,18 +359,18 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
   };
 
   return (
-    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-surface-50 p-4 flex flex-col h-screen w-screen" : "flex flex-col h-full"}>
-      <div className="flex flex-wrap items-center gap-3 mb-4 shrink-0">
-        <h3 className="text-sm font-medium text-surface-200/80 items-center flex gap-2">
-          <svg className="w-5 h-5 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-surface-50 p-2 md:p-4 flex flex-col h-screen w-screen" : "flex flex-col h-full"}>
+      <div className="flex flex-col md:flex-row md:flex-wrap items-start md:items-center gap-3 mb-4 shrink-0">
+        <h3 className="text-xs md:text-sm font-medium text-surface-200/80 items-center flex gap-2">
+          <svg className="w-5 h-5 text-accent-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           Gantt Interactivo: Arrastra bordes para cambiar fechas.
         </h3>
         
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="md:ml-auto flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Botón de Pantalla Completa */}
-          <button onClick={() => setIsFullscreen(!isFullscreen)} className="btn-secondary text-xs px-2 py-1.5 flex items-center gap-1.5" title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Sin distracciones)"}>
+          <button onClick={() => setIsFullscreen(!isFullscreen)} className="btn-secondary text-xs px-2 py-1.5 flex items-center gap-1.5 flex-shrink-0" title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa (Sin distracciones)"}>
             {isFullscreen ? (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M15 15v4.5m0-4.5h4.5m-4.5 0l5.25 5.25M15 9V4.5m0 4.5h4.5M15 9l5.25-5.25M9 15v4.5m0-4.5H4.5m4.5 0l-5.25 5.25" />

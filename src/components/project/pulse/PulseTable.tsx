@@ -37,14 +37,13 @@ export function PulseTable({
   return (
     <div className="glass-card overflow-hidden border border-surface-800/50 shadow-2xl rounded-2xl bg-surface-950/20 backdrop-blur-xl">
       <div className="w-full overflow-x-auto selection:bg-accent-500/30">
-        <table className="w-full text-left border-collapse table-fixed">
+        <table className="w-full text-left border-collapse md:table-fixed">
           <thead>
             <tr className="bg-surface-900/80 border-b-2 border-surface-800/50 text-[10px] font-black text-surface-400 uppercase tracking-[0.2em] shadow-sm">
-              <th className="py-5 px-6 w-full min-w-[250px]">Actividad / Tarea</th>
-              <th className="py-5 px-4 w-28 text-center">Peso</th>
-              <th className="py-5 px-4 w-36 border-l border-surface-800 text-center">Acumulado</th>
-              <th className="py-5 px-6 w-44 text-center bg-accent-500/5 text-accent-400 ring-inset ring-1 ring-accent-400/10">Avance Hoy (%)</th>
-              <th className="py-5 px-4 w-28 text-center">Gestión</th>
+              <th className="py-4 px-3 md:px-6 md:w-full md:min-w-[200px]">Actividad</th>
+              <th className="py-4 px-2 md:px-4 md:w-36 border-l border-surface-800 text-center hidden md:table-cell">Acumulado</th>
+              <th className="py-4 px-2 md:px-6 md:w-44 text-center bg-accent-500/5 text-accent-400 ring-inset ring-1 ring-accent-400/10 whitespace-nowrap">Avance Hoy</th>
+              <th className="py-4 px-2 md:px-4 md:w-28 text-center">Gestión</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-800/30">
@@ -52,10 +51,10 @@ export function PulseTable({
               <React.Fragment key={partida.id}>
                 {/* Partida Header */}
                 <tr className="sticky top-0 z-10">
-                  <td colSpan={5} className="py-3 px-6 bg-gradient-to-r from-primary-700/80 to-primary-800/80 backdrop-blur-md border-y border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_white]"></div>
-                      <span className="font-black text-white text-[11px] tracking-[0.25em] uppercase drop-shadow-md">{partida.name}</span>
+                  <td colSpan={4} className="py-3 px-3 md:px-6 bg-gradient-to-r from-primary-700/80 to-primary-800/80 backdrop-blur-md border-y border-white/5">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_white] shrink-0"></div>
+                      <span className="font-black text-white text-[10px] md:text-[11px] tracking-[0.15em] md:tracking-[0.25em] uppercase drop-shadow-md truncate">{partida.name}</span>
                     </div>
                   </td>
                 </tr>
@@ -64,10 +63,10 @@ export function PulseTable({
                   <React.Fragment key={item.id}>
                     {/* Item header line */}
                     <tr>
-                       <td colSpan={5} className="py-2.5 px-6 bg-surface-900/60 pl-8 border-b border-surface-800/40">
+                       <td colSpan={4} className="py-2 px-3 md:px-6 bg-surface-900/60 md:pl-8 border-b border-surface-800/40">
                          <div className="flex items-center gap-2">
-                           <div className="w-1.5 h-1.5 rounded-full bg-surface-600"></div>
-                           <span className="font-bold text-surface-300 text-[11px] tracking-tight">{item.name}</span>
+                           <div className="w-1.5 h-1.5 rounded-full bg-surface-600 shrink-0"></div>
+                           <span className="font-bold text-surface-300 text-[10px] md:text-[11px] tracking-tight truncate">{item.name}</span>
                          </div>
                        </td>
                     </tr>

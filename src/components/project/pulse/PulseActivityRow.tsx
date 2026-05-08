@@ -184,6 +184,7 @@ export function PulseActivityRow({
                 <div className="flex gap-3 md:gap-4 overflow-x-auto pb-3 md:pb-4 scrollbar-hide min-h-[100px] md:min-h-[128px] p-3 md:p-4 bg-surface-950/50 rounded-2xl border-2 border-surface-800 border-dashed group-hover:border-surface-700 transition-colors">
                    {activity.existingTodayPhotos.map((url, idx) => (
                       <div key={`old-${idx}`} className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shrink-0 border border-surface-700 shadow-md group/img">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="Evidencia Guardada" className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end p-2">
                            <span className="text-[8px] text-white font-bold uppercase">Guardada</span>
@@ -192,6 +193,7 @@ export function PulseActivityRow({
                    ))}
                    {editState?.files?.map((file, idx) => (
                       <div key={`new-${idx}`} className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shrink-0 border-2 border-accent-500 shadow-lg group/img">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={URL.createObjectURL(file)} alt="Nueva" className="w-full h-full object-cover opacity-80" />
                         <button 
                           onClick={() => onRemoveFile(idx)} 

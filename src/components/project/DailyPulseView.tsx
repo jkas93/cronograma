@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { PartidaWithItems, DailyProgress } from '@/lib/types';
 import { PulseHeader } from './pulse/PulseHeader';
 import { PulseTable } from './pulse/PulseTable';
@@ -13,28 +13,50 @@ interface Props {
   dailyProgress?: DailyProgress[];
 }
 
-export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Props) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+/**
+ * Obtener la fecha local correcta en formato yyyy-MM-dd
+ * usando Intl.DateTimeFormat para respetar la zona horaria del usuario.
+ * Fix #3: Evita que a las 11pm UTC-5 se muestre la fecha del día siguiente.
+ */
+function getLocalDateString(): string {
+  return new Intl.DateTimeFormat('sv-SE').format(new Date());
+}
+
+export function DailyPulseView({ projectId, partidas, dailyProgress: initialDailyProgress = [] }: Props) {
+  // Fix #3: Usar fecha local correcta
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString);
   const [editedValues, setEditedValues] = useState<EditedValues>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [success, setSuccess] = useState(false);
 
-  // Memoria - Fuga de recursos (Blob URLs)
+  // Fix #2: Estado local de dailyProgress para optimistic updates
+  const [localDailyProgress, setLocalDailyProgress] = useState(initialDailyProgress);
+
+  // Sincronizar con props del servidor cuando llegan datos nuevos (tras router.refresh())
+  useEffect(() => {
+    setLocalDailyProgress(initialDailyProgress);
+  }, [initialDailyProgress]);
+
+  // Fix #4: Rastrear Blob URLs creados para revocarlos correctamente
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // Fix #4: Cleanup de Blob URLs al desmontar o cambiar archivos
   useEffect(() => {
     return () => {
-      Object.values(editedValues).forEach(val => {
-        val.files?.forEach(file => {
-          try {
-            const url = URL.createObjectURL(file);
-            URL.revokeObjectURL(url);
-          } catch {}
-        });
+      blobUrlsRef.current.forEach(url => {
+        try { URL.revokeObjectURL(url); } catch {}
       });
+      blobUrlsRef.current.clear();
     };
-  }, [editedValues]);
+  }, []);
 
   // Reset when date changes
   useEffect(() => {
+    // Fix #4: Revocar blob URLs al cambiar de fecha
+    blobUrlsRef.current.forEach(url => {
+      try { URL.revokeObjectURL(url); } catch {}
+    });
+    blobUrlsRef.current.clear();
     setEditedValues({});
     setExpandedRows(new Set());
     setSuccess(false);
@@ -43,13 +65,13 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
   // Performance - O(1) Map
   const progressByActivity = useMemo(() => {
     const map = new Map<string, DailyProgress[]>();
-    dailyProgress.forEach(dp => {
+    localDailyProgress.forEach(dp => {
       const existing = map.get(dp.activity_id) || [];
       existing.push(dp);
       map.set(dp.activity_id, existing);
     });
     return map;
-  }, [dailyProgress]);
+  }, [localDailyProgress]);
 
   // Map activities with today's state
   const activeActivitiesByPartida = useMemo(() => {
@@ -121,6 +143,17 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
     return count;
   }, [activeActivitiesByPartida, editedValues]);
 
+  // Fix #5: Solo contar como "editado" si hay cambios reales (no entradas vacías)
+  const hasRealEdits = useMemo(() => {
+    return Object.values(editedValues).some(val => 
+      (val.percent !== undefined && val.percent !== '') || 
+      (val.notes !== undefined && val.notes !== '') || 
+      (val.files && val.files.length > 0) || 
+      val.hasRestriction !== undefined ||
+      (val.restrictionReason !== undefined && val.restrictionReason !== '')
+    );
+  }, [editedValues]);
+
   // Handlers
   const handleToggleRow = (id: string) => {
     setExpandedRows(prev => {
@@ -153,13 +186,49 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
   };
 
   const changeDate = (days: number) => {
-    if (Object.keys(editedValues).length > 0 && !window.confirm('Tienes cambios sin guardar. ¿Deseas descartarlos?')) {
+    if (hasRealEdits && !window.confirm('Tienes cambios sin guardar. ¿Deseas descartarlos?')) {
       return;
     }
-    const current = new Date(selectedDate);
+    const current = new Date(selectedDate + 'T12:00:00'); // Fix #3: Evitar saltos de día por timezone
     current.setDate(current.getDate() + days);
-    setSelectedDate(current.toISOString().split('T')[0]);
+    setSelectedDate(new Intl.DateTimeFormat('sv-SE').format(current));
   };
+
+  // Fix #2: Función de optimistic update — inyectar registros guardados localmente
+  const applyOptimisticUpdate = useCallback((savedEditedValues: EditedValues) => {
+    setLocalDailyProgress(prev => {
+      const updated = [...prev];
+      
+      Object.entries(savedEditedValues).forEach(([activityId, editVal]) => {
+        if (!editVal.percent && editVal.percent !== '0') return;
+        
+        const existingIdx = updated.findIndex(
+          dp => dp.activity_id === activityId && dp.date === selectedDate
+        );
+        
+        const newRecord: DailyProgress = {
+          id: `optimistic-${activityId}-${Date.now()}`,
+          activity_id: activityId,
+          date: selectedDate,
+          progress_percent: parseFloat(editVal.percent || '0'),
+          notes: editVal.notes || null,
+          photo_urls: [],
+          has_restriction: editVal.hasRestriction || false,
+          restriction_reason: editVal.restrictionReason || null,
+          created_by: null,
+          created_at: new Date().toISOString()
+        };
+
+        if (existingIdx >= 0) {
+          updated[existingIdx] = { ...updated[existingIdx], ...newRecord, id: updated[existingIdx].id };
+        } else {
+          updated.push(newRecord);
+        }
+      });
+
+      return updated;
+    });
+  }, [selectedDate]);
 
   // Pulse Save Hook
   const { handleSaveAll, loading, error, setError } = usePulseSave({
@@ -167,9 +236,19 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
     selectedDate,
     activeActivitiesByPartida,
     onSaveSuccess: () => {
+      // Fix #2: Aplicar optimistic update ANTES de limpiar editedValues
+      applyOptimisticUpdate(editedValues);
+      
       setSuccess(true);
       setEditedValues({});
       setExpandedRows(new Set());
+      
+      // Fix #4: Revocar blob URLs de archivos subidos
+      blobUrlsRef.current.forEach(url => {
+        try { URL.revokeObjectURL(url); } catch {}
+      });
+      blobUrlsRef.current.clear();
+      
       setTimeout(() => setSuccess(false), 3000);
     }
   });
@@ -179,14 +258,14 @@ export function DailyPulseView({ projectId, partidas, dailyProgress = [] }: Prop
       <PulseHeader
         selectedDate={selectedDate}
         changeDate={changeDate}
-        hasUnsavedEdits={Object.keys(editedValues).length > 0}
+        hasUnsavedEdits={hasRealEdits}
         onDateChange={setSelectedDate}
         registeredTodayCount={registeredTodayCount}
         flatActiveActivitiesCount={flatActiveActivitiesCount}
         activeRestrictionsCount={activeRestrictionsCount}
         loading={loading}
         onSave={() => handleSaveAll(editedValues)}
-        hasEditedValues={Object.keys(editedValues).length > 0}
+        hasEditedValues={hasRealEdits}
       />
 
       {(error || success) && (

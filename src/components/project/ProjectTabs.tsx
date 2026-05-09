@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { Project, Alert } from '@/lib/types';
 import { GanttView } from '@/components/gantt/GanttView';
 import { SCurveChart } from '@/components/charts/SCurveChart';
@@ -18,21 +19,47 @@ interface Props {
   milestones: any[];
 }
 
+const VALID_TABS = ['gantt', 'scurve', 'progress', 'alerts'] as const;
+type TabId = typeof VALID_TABS[number];
+
 const tabs = [
-  { id: 'gantt', label: 'Gantt', icon: 'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12' },
-  { id: 'scurve', label: 'Curva S', icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
-  { id: 'progress', label: 'Pulso Diario', icon: 'M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' },
-  { id: 'alerts', label: 'Alertas', icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0' },
+  { id: 'gantt' as TabId, label: 'Gantt', icon: 'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12' },
+  { id: 'scurve' as TabId, label: 'Curva S', icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
+  { id: 'progress' as TabId, label: 'Pulso Diario', icon: 'M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { id: 'alerts' as TabId, label: 'Alertas', icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0' },
 ];
 
 export function ProjectTabs({ project, partidas, dailyProgress, alerts, milestones }: Props) {
-  const [activeTab, setActiveTab] = useState('gantt');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Leer pestaña activa desde la URL, con fallback a 'gantt'
+  const tabFromUrl = searchParams.get('tab') as TabId | null;
+  const initialTab = tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'gantt';
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+
+  // Sincronizar con URL cuando cambia el search param (ej. tras router.refresh())
+  useEffect(() => {
+    const currentTab = searchParams.get('tab') as TabId | null;
+    if (currentTab && VALID_TABS.includes(currentTab) && currentTab !== activeTab) {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams, activeTab]);
+
+  // Cambiar pestaña y actualizar URL sin recargar
+  const handleTabChange = (tabId: TabId) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tabId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   // Count unread alerts
   const unreadAlerts = alerts.filter((a) => !a.is_read).length;
 
-  // Count active restrictions for today
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Count active restrictions for today (usando fecha local correcta)
+  const todayStr = new Intl.DateTimeFormat('sv-SE').format(new Date()); // Fix #3 parcial: yyyy-MM-dd en zona local
   const activeRestrictions = dailyProgress.filter((dp) => dp.date === todayStr && dp.has_restriction).length;
 
   return (
@@ -42,7 +69,7 @@ export function ProjectTabs({ project, partidas, dailyProgress, alerts, mileston
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm transition-all whitespace-nowrap flex-shrink-0 font-bold ${
               activeTab === tab.id
                 ? 'bg-accent-400 text-primary-900 shadow-md shadow-accent-400/20'

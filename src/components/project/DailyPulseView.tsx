@@ -40,13 +40,14 @@ export function DailyPulseView({ projectId, partidas, dailyProgress: initialDail
   // Fix #4: Rastrear Blob URLs creados para revocarlos correctamente
   const blobUrlsRef = useRef<Set<string>>(new Set());
 
-  // Fix #4: Cleanup de Blob URLs al desmontar o cambiar archivos
+  // Fix #4: Cleanup de Blob URLs al desmontar
   useEffect(() => {
+    const urls = blobUrlsRef.current;
     return () => {
-      blobUrlsRef.current.forEach(url => {
+      urls.forEach(url => {
         try { URL.revokeObjectURL(url); } catch {}
       });
-      blobUrlsRef.current.clear();
+      urls.clear();
     };
   }, []);
 

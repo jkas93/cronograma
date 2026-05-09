@@ -1,63 +1,16 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { calculateSCurve } from '@/lib/scurve';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import type { SCurveData } from '@/lib/types';
 
 interface Props {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   project: any;
+  unreadAlerts: number;
+  scurveData: SCurveData;
 }
 
-export async function ProjectCard({ project }: Props) {
-  const supabase = await createClient();
-
-  // 1. Fetch unread alerts
-  const { count: unreadAlerts } = await supabase
-    .from('alerts')
-    .select('*', { count: 'exact', head: true })
-    .eq('project_id', project.id)
-    .eq('is_read', false);
-
-  // 2. Fetch all activities for SCurve
-  const { data: partidas } = await supabase
-    .from('partidas')
-    .select(`
-      items (
-        activities (*)
-      )
-    `)
-    .eq('project_id', project.id);
-
-  const activities = (partidas || [])
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .flatMap((p: any) => p.items || [])
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .flatMap((i: any) => i.activities || []);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const activityIds = activities.map((a: any) => a.id);
-
-  // 3. Fetch daily progress
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let dailyProgress: any[] = [];
-  if (activityIds.length > 0) {
-    const { data } = await supabase
-      .from('daily_progress')
-      .select('*')
-      .in('activity_id', activityIds)
-      .order('date');
-    dailyProgress = data || [];
-  }
-
-  // Calculate Metrics
-  const scurveData = calculateSCurve(
-    project.start_date,
-    project.end_date,
-    activities,
-    dailyProgress
-  );
-
+export function ProjectCard({ project, unreadAlerts, scurveData }: Props) {
   const formatOptions = { locale: es };
   const startDate = format(parseISO(project.start_date), 'dd MMM yyyy', formatOptions);
   const endDate = format(parseISO(project.end_date), 'dd MMM yyyy', formatOptions);

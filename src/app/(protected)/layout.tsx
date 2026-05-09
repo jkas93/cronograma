@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 
-export const dynamic = 'force-dynamic';
+// Se remueve force-dynamic para permitir renderizado parcial y mejor caché
 
 /**
  * Protected layout — wraps all authenticated routes.
@@ -15,7 +15,7 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
 
   if (!user) {
     redirect('/login');

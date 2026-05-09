@@ -1,12 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { ProjectActionsMenu } from '@/components/project/ProjectActionsMenu';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -31,7 +29,7 @@ export default async function ProjectPage({ params }: Props) {
     notFound();
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
   const isOwner = user?.id === project.owner_id;
 
   const partidas = partidasRes.data || [];

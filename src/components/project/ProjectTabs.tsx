@@ -1,11 +1,30 @@
 'use client';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import type { Project, Alert } from '@/lib/types';
-import { GanttView } from '@/components/gantt/GanttView';
-import { SCurveChart } from '@/components/charts/SCurveChart';
-import { AlertBanner } from '@/components/alerts/AlertBanner';
-import { DailyPulseView } from '@/components/project/DailyPulseView';
+
+// Componente de Skeleton para mientras carga cada pestaña
+const TabSkeleton = () => (
+  <div className="w-full bg-surface-900/30 rounded-xl border border-surface-800/50 p-6 flex flex-col gap-4 animate-pulse">
+    <div className="h-8 w-1/4 bg-surface-800 rounded"></div>
+    <div className="h-48 w-full bg-surface-800 rounded-lg"></div>
+  </div>
+);
+
+// Lazy loading de las pestañas
+const GanttView = dynamic(() => import('@/components/gantt/GanttView').then(mod => mod.GanttView), { 
+  loading: () => <TabSkeleton />, ssr: false 
+});
+const SCurveChart = dynamic(() => import('@/components/charts/SCurveChart').then(mod => mod.SCurveChart), { 
+  loading: () => <TabSkeleton />, ssr: false 
+});
+const DailyPulseView = dynamic(() => import('@/components/project/DailyPulseView').then(mod => mod.DailyPulseView), { 
+  loading: () => <TabSkeleton />, ssr: false 
+});
+const AlertBanner = dynamic(() => import('@/components/alerts/AlertBanner').then(mod => mod.AlertBanner), { 
+  loading: () => <TabSkeleton />, ssr: false 
+});
 
 interface Props {
   project: Project;

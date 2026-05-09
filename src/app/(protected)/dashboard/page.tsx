@@ -1,12 +1,13 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getCachedUser } from '@/lib/supabase/server';
 import { NewProjectButton } from '@/components/dashboard/NewProjectButton';
 import { ProjectCard } from '@/components/dashboard/ProjectCard';
+import { calculateSCurve } from '@/lib/scurve';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCachedUser();
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -68,6 +69,80 @@ export default async function DashboardPage() {
     ];
   }
 
+  // PRE-FETCH OPTIMIZADO (Elimina N+1 de ProjectCard)
+  const projectIds = allProjects.map(p => p.id);
+
+  // 1. Fetch de Alertas
+  const { data: allAlerts } = await supabase
+    .from('alerts')
+    .select('project_id')
+    .in('project_id', projectIds)
+    .eq('is_read', false);
+
+  const unreadAlertsMap = (allAlerts || []).reduce((acc: Record<string, number>, alert) => {
+    acc[alert.project_id] = (acc[alert.project_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  // 2. Fetch de Partidas y Actividades
+  const { data: allPartidas } = await supabase
+    .from('partidas')
+    .select('project_id, items(activities(*))')
+    .in('project_id', projectIds);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activitiesByProject: Record<string, any[]> = {};
+  const allActivityIds: string[] = [];
+
+  (allPartidas || []).forEach(p => {
+    const projId = p.project_id;
+    if (!activitiesByProject[projId]) activitiesByProject[projId] = [];
+    
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const acts = (p.items || []).flatMap((i: any) => i.activities || []);
+    activitiesByProject[projId].push(...acts);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    allActivityIds.push(...acts.map((a: any) => a.id));
+  });
+
+  // 3. Fetch de Daily Progress
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allDailyProgress: any[] = [];
+  if (allActivityIds.length > 0) {
+    const { data: dpData } = await supabase
+      .from('daily_progress')
+      .select('*')
+      .in('activity_id', allActivityIds);
+    allDailyProgress = dpData || [];
+  }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dailyProgressByActivity = allDailyProgress.reduce((acc: Record<string, any[]>, dp) => {
+    if (!acc[dp.activity_id]) acc[dp.activity_id] = [];
+    acc[dp.activity_id].push(dp);
+    return acc;
+  }, {});
+
+  // 4. Precalcular Métricas
+  const projectsWithMetrics = allProjects.map(project => {
+    const activities = activitiesByProject[project.id] || [];
+    const dailyProgress = activities.flatMap(a => dailyProgressByActivity[a.id] || []);
+    
+    // Memoización: pasamos los datos precalculados a la card
+    const scurveData = calculateSCurve(
+      project.start_date,
+      project.end_date,
+      activities,
+      dailyProgress
+    );
+
+    return {
+      ...project,
+      unreadAlerts: unreadAlertsMap[project.id] || 0,
+      scurveData
+    };
+  });
+
   return (
     <div className="p-8 max-w-7xl mx-auto fade-in">
       {/* Header */}
@@ -99,8 +174,13 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+          {projectsWithMetrics.map((project) => (
+            <ProjectCard 
+              key={project.id} 
+              project={project} 
+              unreadAlerts={project.unreadAlerts} 
+              scurveData={project.scurveData} 
+            />
           ))}
         </div>
       )}

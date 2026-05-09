@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 /**
  * Creates a Supabase client for use in Server Components, Server Actions,
@@ -31,3 +32,13 @@ export async function createClient() {
     }
   );
 }
+
+/**
+ * Helper memoizado para obtener el usuario autenticado.
+ * Garantiza que solo se hace una consulta a Supabase por ciclo de renderizado,
+ * eliminando llamadas duplicadas entre Layout y Page.
+ */
+export const getCachedUser = cache(async () => {
+  const supabase = await createClient();
+  return await supabase.auth.getUser();
+});

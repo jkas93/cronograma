@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -13,7 +13,7 @@ import {
   ReferenceLine,
   ReferenceDot,
 } from 'recharts';
-import { calculateSCurve } from '@/lib/scurve';
+
 import type { Project, PartidaWithItems, DailyProgress, SCurvePoint } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 
@@ -85,16 +85,50 @@ export function SCurveChart({ project, partidas, dailyProgress, milestones, show
       .flatMap((i) => i.activities || []);
   }, [partidas]);
 
-  // Calculate S-Curve data
-  const scurveData = useMemo(() => {
-    if (activities.length === 0) return null;
-    return calculateSCurve(
-      project.start_date,
-      project.end_date,
+  interface SCurveData {
+    points: SCurvePoint[];
+    currentPlanned: number;
+    currentActual: number;
+    spiIndex: number;
+    latestProgressDate: string | null;
+  }
+
+  // Calculate S-Curve data via Web Worker
+  const [scurveData, setScurveData] = useState<SCurveData | null>(null);
+  const [isCalculating, setIsCalculating] = useState(true);
+
+  useEffect(() => {
+    if (activities.length === 0) {
+      setScurveData(null);
+      setIsCalculating(false);
+      return;
+    }
+
+    setIsCalculating(true);
+    // Instantiate the worker
+    const worker = new Worker(new URL('../../lib/scurve.worker.ts', import.meta.url));
+
+    worker.onmessage = (e) => {
+      if (e.data.success) {
+        setScurveData(e.data.result);
+      } else {
+        console.error("Worker error computing SCurve:", e.data.error);
+        setScurveData(null);
+      }
+      setIsCalculating(false);
+    };
+
+    worker.postMessage({
+      startDate: project.start_date,
+      endDate: project.end_date,
       activities,
       dailyProgress
-    );
-  }, [project, activities, dailyProgress]);
+    });
+
+    return () => {
+      worker.terminate();
+    };
+  }, [project.start_date, project.end_date, activities, dailyProgress]);
 
   const { todayStr, milestoneDates } = useMemo(() => ({
     todayStr: format(new Date(), 'yyyy-MM-dd'),
@@ -133,6 +167,20 @@ export function SCurveChart({ project, partidas, dailyProgress, milestones, show
         <p className="text-sm text-surface-200/60">
           Agrega actividades en el Gantt para ver la Curva S planificada.
           Registra avance diario para la curva real.
+        </p>
+      </div>
+    );
+  }
+
+  if (isCalculating) {
+    return (
+      <div className="glass-card p-12 text-center">
+        <div className="w-12 h-12 rounded-full border-4 border-primary-500/30 border-t-primary-500 animate-spin mx-auto mb-4"></div>
+        <h3 className="text-lg font-semibold text-surface-100 mb-2">
+          Calculando Curva S...
+        </h3>
+        <p className="text-sm text-surface-200/60">
+          Procesando proyecciones y ganancias diarias en segundo plano.
         </p>
       </div>
     );

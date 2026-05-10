@@ -4,14 +4,14 @@ import { EnhancedActivity, EditedValue } from './types';
 interface PulseActivityRowProps {
   activity: EnhancedActivity;
   isExpanded: boolean;
-  onToggleExpand: () => void;
+  onToggleExpand: (id: string) => void;
   editState?: EditedValue;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onFieldChange: (field: keyof EditedValue, value: any) => void;
-  onRemoveFile: (idx: number) => void;
+  onFieldChange: (id: string, field: keyof EditedValue, value: any) => void;
+  onRemoveFile: (id: string, idx: number) => void;
 }
 
-export function PulseActivityRow({
+export const PulseActivityRow = React.memo(function PulseActivityRow({
   activity,
   isExpanded,
   onToggleExpand,
@@ -19,23 +19,53 @@ export function PulseActivityRow({
   onFieldChange,
   onRemoveFile
 }: PulseActivityRowProps) {
+  // Local state for debounced input handling
+  const [localPercent, setLocalPercent] = React.useState<string>(
+    editState?.percent !== undefined ? editState.percent : (activity.existingTodayPercent !== null ? activity.existingTodayPercent.toString() : '')
+  );
+  const [localNotes, setLocalNotes] = React.useState<string>(
+    editState?.notes !== undefined ? editState.notes : (activity.existingTodayNotes || '')
+  );
+  const [localRestrictionReason, setLocalRestrictionReason] = React.useState<string>(
+    editState?.restrictionReason !== undefined ? editState.restrictionReason : (activity.existingTodayRestrictionReason || '')
+  );
+
+  // Sync local state if parent changes (e.g. after successful save)
+  React.useEffect(() => {
+    setLocalPercent(editState?.percent !== undefined ? editState.percent : (activity.existingTodayPercent !== null ? activity.existingTodayPercent.toString() : ''));
+    setLocalNotes(editState?.notes !== undefined ? editState.notes : (activity.existingTodayNotes || ''));
+    setLocalRestrictionReason(editState?.restrictionReason !== undefined ? editState.restrictionReason : (activity.existingTodayRestrictionReason || ''));
+  }, [editState?.percent, editState?.notes, editState?.restrictionReason, activity.existingTodayPercent, activity.existingTodayNotes, activity.existingTodayRestrictionReason]);
+
+  const handlePercentBlur = () => {
+    if (localPercent !== editState?.percent) {
+      onFieldChange(activity.id, 'percent', localPercent);
+    }
+  };
+
+  const handleNotesBlur = () => {
+    if (localNotes !== editState?.notes) {
+      onFieldChange(activity.id, 'notes', localNotes);
+    }
+  };
+
+  const handleRestrictionReasonBlur = () => {
+    if (localRestrictionReason !== editState?.restrictionReason) {
+      onFieldChange(activity.id, 'restrictionReason', localRestrictionReason);
+    }
+  };
+
   const hasUnsavedChanges = !!(editState?.percent || editState?.notes || (editState?.files && editState.files.length > 0));
   
-  const displayPercent = editState?.percent !== undefined 
-    ? editState.percent 
-    : (activity.existingTodayPercent !== null ? activity.existingTodayPercent.toString() : '');
+  const displayPercent = localPercent;
 
   const isRestricted = editState?.hasRestriction !== undefined 
     ? editState.hasRestriction 
     : activity.existingTodayRestriction;
 
-  const restrictionReason = editState?.restrictionReason !== undefined 
-    ? editState.restrictionReason 
-    : activity.existingTodayRestrictionReason;
+  const restrictionReason = localRestrictionReason;
 
-  const currentNotes = editState?.notes !== undefined 
-    ? editState.notes 
-    : activity.existingTodayNotes;
+  const currentNotes = localNotes;
 
   const trClass = isRestricted 
     ? 'bg-danger-500/5 hover:bg-danger-500/10 border-l-4 border-l-danger-500 border-b border-surface-700/50 transition-colors group/row'
@@ -88,7 +118,8 @@ export function PulseActivityRow({
                 min="0" max="100" step="0.5"
                 placeholder="0"
                 value={displayPercent}
-                onChange={(e) => onFieldChange('percent', e.target.value)}
+                onChange={(e) => setLocalPercent(e.target.value)}
+                onBlur={handlePercentBlur}
                 className="w-16 h-9 md:w-20 md:h-10 text-center text-sm md:text-base font-black rounded-lg bg-white border border-surface-600 focus:border-accent-400 focus:ring-4 focus:ring-accent-400/20 outline-none transition-all text-surface-100 shadow-sm"
               />
               <span className="absolute -top-2 -right-1 text-[9px] md:text-[10px] bg-accent-500 text-primary-900 px-1 rounded font-black border border-surface-700 shadow-sm">%</span>
@@ -99,7 +130,7 @@ export function PulseActivityRow({
         {/* Gestión */}
         <td className="py-3 px-2 md:py-4 md:px-4 text-center">
           <button 
-            onClick={onToggleExpand}
+            onClick={() => onToggleExpand(activity.id)}
             className={`p-2 md:p-2.5 rounded-xl transition-all duration-300 relative group/btn ${
               isExpanded 
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' 
@@ -130,7 +161,7 @@ export function PulseActivityRow({
                       <input 
                         type="checkbox" 
                         checked={isRestricted}
-                        onChange={() => onFieldChange('hasRestriction', !isRestricted)}
+                        onChange={() => onFieldChange(activity.id, 'hasRestriction', !isRestricted)}
                         className="w-4 h-4 md:w-5 md:h-5 accent-danger-500 rounded-lg bg-surface-700 border-surface-600 cursor-pointer"
                       />
                     </div>
@@ -142,8 +173,9 @@ export function PulseActivityRow({
                   <div className="pl-6 md:pl-8 animate-fade-in">
                     <label className="block text-[9px] md:text-[10px] font-black text-danger-400 uppercase tracking-[0.2em] mb-2 leading-none">Detalles del impedimento</label>
                     <textarea
-                      value={restrictionReason || ''}
-                      onChange={(e) => onFieldChange('restrictionReason', e.target.value)}
+                      value={restrictionReason}
+                      onChange={(e) => setLocalRestrictionReason(e.target.value)}
+                      onBlur={handleRestrictionReasonBlur}
                       placeholder="Indica el motivo: falta de material, clima, permisos, etc..."
                       className="w-full text-xs md:text-sm bg-surface-900/50 border border-danger-500/30 rounded-xl p-3 md:p-4 outline-none focus:border-danger-400 focus:ring-4 focus:ring-danger-500/10 text-surface-100 resize-none h-20 md:h-24 transition-all"
                     />
@@ -156,8 +188,9 @@ export function PulseActivityRow({
                 <label className="block text-[9px] md:text-[10px] font-black text-surface-400 uppercase tracking-[0.2em] mb-1">Observaciones del día</label>
                 <div className="relative">
                   <textarea
-                    value={currentNotes || ''}
-                    onChange={(e) => onFieldChange('notes', e.target.value)}
+                    value={currentNotes}
+                    onChange={(e) => setLocalNotes(e.target.value)}
+                    onBlur={handleNotesBlur}
                     placeholder="Escribe comentarios relevantes sobre el avance..."
                     className="w-full text-xs md:text-sm bg-surface-800 border border-surface-700 rounded-xl p-3 md:p-4 outline-none focus:border-accent-400 focus:ring-4 focus:ring-accent-400/5 text-surface-100 resize-none h-28 md:h-32 transition-all"
                   />
@@ -175,7 +208,7 @@ export function PulseActivityRow({
                     </div>
                     <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
                       if (e.target.files) {
-                        onFieldChange('files', Array.from(e.target.files));
+                        onFieldChange(activity.id, 'files', Array.from(e.target.files));
                       }
                     }} />
                   </label>
@@ -196,7 +229,7 @@ export function PulseActivityRow({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={URL.createObjectURL(file)} alt="Nueva" className="w-full h-full object-cover opacity-80" />
                         <button 
-                          onClick={() => onRemoveFile(idx)} 
+                          onClick={() => onRemoveFile(activity.id, idx)} 
                           className="absolute inset-0 m-auto w-7 h-7 md:w-8 md:h-8 bg-danger-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all hover:scale-110 active:scale-90 shadow-lg"
                           title="Eliminar"
                         >
@@ -224,4 +257,4 @@ export function PulseActivityRow({
       )}
     </>
   );
-}
+});

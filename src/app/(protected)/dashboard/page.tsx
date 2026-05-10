@@ -123,21 +123,35 @@ export default async function DashboardPage() {
     return acc;
   }, {});
 
-  // 4. Precalcular Métricas
+  // 4. Precalcular Métricas + Fechas efectivas
   const projectsWithMetrics = allProjects.map(project => {
     const activities = activitiesByProject[project.id] || [];
     const dailyProgress = activities.flatMap(a => dailyProgressByActivity[a.id] || []);
     
-    // Memoización: pasamos los datos precalculados a la card
+    // Calcular fechas efectivas desde las actividades reales
+    let effectiveStart = project.start_date;
+    let effectiveEnd = project.end_date;
+    if (activities.length > 0) {
+      const activityStarts = activities.map((a: { start_date: string }) => a.start_date).filter(Boolean);
+      const activityEnds = activities.map((a: { end_date: string }) => a.end_date).filter(Boolean);
+      if (activityStarts.length > 0) effectiveStart = activityStarts.sort()[0];
+      if (activityEnds.length > 0) effectiveEnd = activityEnds.sort().reverse()[0];
+      // Use whichever is earlier/later between project dates and activity dates
+      if (effectiveStart > project.start_date) effectiveStart = project.start_date;
+      if (effectiveEnd < project.end_date) effectiveEnd = project.end_date;
+    }
+
     const scurveData = calculateSCurve(
-      project.start_date,
-      project.end_date,
+      effectiveStart,
+      effectiveEnd,
       activities,
       dailyProgress
     );
 
     return {
       ...project,
+      effective_start_date: effectiveStart,
+      effective_end_date: effectiveEnd,
       unreadAlerts: unreadAlertsMap[project.id] || 0,
       scurveData
     };

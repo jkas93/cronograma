@@ -56,6 +56,29 @@ export default async function ProjectPage({ params }: Props) {
     dailyProgress = data || [];
   }
 
+  // Calcular fechas efectivas desde las actividades reales
+  const allActivities = partidas
+    .flatMap((p: { items?: { activities?: { start_date: string; end_date: string }[] }[] }) => p.items || [])
+    .flatMap((i) => i.activities || []);
+
+  let effectiveStart = project.start_date;
+  let effectiveEnd = project.end_date;
+  if (allActivities.length > 0) {
+    const actStarts = allActivities.map(a => a.start_date).filter(Boolean);
+    const actEnds = allActivities.map(a => a.end_date).filter(Boolean);
+    if (actStarts.length > 0) {
+      const minStart = actStarts.sort()[0];
+      if (minStart < effectiveStart) effectiveStart = minStart;
+    }
+    if (actEnds.length > 0) {
+      const maxEnd = actEnds.sort().reverse()[0];
+      if (maxEnd > effectiveEnd) effectiveEnd = maxEnd;
+    }
+  }
+
+  // Override project dates for downstream components
+  const effectiveProject = { ...project, start_date: effectiveStart, end_date: effectiveEnd };
+
   return (
     <div className="p-3 md:p-6 max-w-full mx-auto fade-in">
       {/* Header Estructurado P.U.L.S.O. */}
@@ -90,14 +113,14 @@ export default async function ProjectPage({ params }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-[10px] md:text-xs text-surface-200 bg-white border border-surface-700/50 px-3 py-1.5 rounded-lg flex-shrink-0 shadow-sm font-medium">
             <span className="font-bold mr-1 uppercase tracking-wider text-surface-400">Periodo:</span>{' '}
-            {format(parseISO(project.start_date), 'dd MMM yyyy', { locale: es })} <span className="text-accent-500 font-bold mx-1">→</span> {format(parseISO(project.end_date), 'dd MMM yyyy', { locale: es })}
+            {format(parseISO(effectiveStart), 'dd MMM yyyy', { locale: es })} <span className="text-accent-500 font-bold mx-1">→</span> {format(parseISO(effectiveEnd), 'dd MMM yyyy', { locale: es })}
           </div>
         </div>
       </div>
 
       {/* Tabbed Content */}
       <ProjectTabs
-        project={project}
+        project={effectiveProject}
         partidas={partidas || []}
         dailyProgress={dailyProgress}
         alerts={alerts || []}

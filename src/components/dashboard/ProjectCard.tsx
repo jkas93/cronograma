@@ -12,8 +12,8 @@ interface Props {
 
 export function ProjectCard({ project, unreadAlerts, scurveData }: Props) {
   const formatOptions = { locale: es };
-  const startDate = format(parseISO(project.start_date), 'dd MMM yyyy', formatOptions);
-  const endDate = format(parseISO(project.end_date), 'dd MMM yyyy', formatOptions);
+  const startDate = format(parseISO(project.effective_start_date || project.start_date), 'dd MMM yyyy', formatOptions);
+  const endDate = format(parseISO(project.effective_end_date || project.end_date), 'dd MMM yyyy', formatOptions);
   
   // Format SPI color
   const spi = scurveData.spiIndex;

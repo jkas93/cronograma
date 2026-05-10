@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PartidaWithItems, DailyProgress } from '@/lib/types';
@@ -24,7 +24,7 @@ interface Props {
 
 export function GanttView({ projectId, partidas, dailyProgress = [], readonly = false }: Props) {
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
   
   const [zoomLevel, setZoomLevel] = useState('day');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -62,9 +62,9 @@ export function GanttView({ projectId, partidas, dailyProgress = [], readonly = 
   }, [partidas, dailyProgress]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEditTaskClick = (details: any) => {
+  const handleEditTaskClick = useCallback((details: any) => {
     setEditModal({ ...details, open: true });
-  };
+  }, []);
 
   const handleSidebarSave = async (taskId: string, dbType: GanttDbType, dbId: string, updates: Record<string, unknown>) => {
     const res = await updateTask(dbType, dbId, updates);

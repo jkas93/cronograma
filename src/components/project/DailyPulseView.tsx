@@ -156,13 +156,13 @@ export function DailyPulseView({ projectId, partidas, dailyProgress: initialDail
   }, [editedValues]);
 
   // Handlers
-  const handleToggleRow = (id: string) => {
+  const handleToggleRow = useCallback((id: string) => {
     setExpandedRows(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-  };
+  }, []);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateField = useCallback((activityId: string, field: keyof EditedValue, value: any) => {
@@ -175,7 +175,7 @@ export function DailyPulseView({ projectId, partidas, dailyProgress: initialDail
     }));
   }, []);
 
-  const removeFile = (activityId: string, idx: number) => {
+  const removeFile = useCallback((activityId: string, idx: number) => {
     setEditedValues(prev => {
       const currentFiles = prev[activityId]?.files || [];
       const nextFiles = currentFiles.filter((_, i) => i !== idx);
@@ -184,7 +184,7 @@ export function DailyPulseView({ projectId, partidas, dailyProgress: initialDail
         [activityId]: { ...prev[activityId], files: nextFiles }
       };
     });
-  };
+  }, []);
 
   const changeDate = (days: number) => {
     if (hasRealEdits && !window.confirm('Tienes cambios sin guardar. ¿Deseas descartarlos?')) {

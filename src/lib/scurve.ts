@@ -139,6 +139,19 @@ export function calculateSCurve(
     }
   }
 
+  // Pre-calculate planned daily gains to avoid O(A * D) inside the points loop
+  const plannedDailyGainMap = new Map<string, number>();
+  for (const { dailyWeight, start, end } of activityDailyWeights) {
+    const current = new Date(start);
+    while (current <= end) {
+      if (isWorkingDay(current)) {
+        const dayStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        plannedDailyGainMap.set(dayStr, (plannedDailyGainMap.get(dayStr) || 0) + dailyWeight);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
   // Find the latest date of progress entries to stop the actual curve at that date
   const validProgress = dailyProgress.filter(dp => Number(dp.progress_percent) > 0 || !!dp.notes || (dp.photo_urls && dp.photo_urls.length > 0) || dp.has_restriction);
   const latestProgressDate = validProgress.length > 0
@@ -160,18 +173,8 @@ export function calculateSCurve(
     // Manual date string formatting is faster than date-fns format() for thousands of calls
     const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 
-    // Planned: sum daily weights for activities active on this day ONLY if it's a working day
-    let plannedGain = 0;
-    if (isWorkingDay(day)) {
-      for (const { dailyWeight, start, end } of activityDailyWeights) {
-        if (
-          (isAfter(day, start) || isEqual(day, start)) &&
-          (isBefore(day, end) || isEqual(day, end))
-        ) {
-          plannedGain += dailyWeight;
-        }
-      }
-    }
+    // Planned: O(1) lookup
+    const plannedGain = plannedDailyGainMap.get(dayStr) || 0;
     cumulativePlanned += plannedGain;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

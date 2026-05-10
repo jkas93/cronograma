@@ -92,6 +92,24 @@ export function GanttChart({
       gantt.config.order_branch = true;
       gantt.config.order_branch_free = true;
 
+      // Mobile Touch Optimization
+      gantt.config.touch = true;
+      gantt.config.touch_drag = true;
+      gantt.config.touch_feedback = true;
+
+      if (typeof window !== 'undefined') {
+        if (window.innerWidth < 768) {
+          // Teléfonos en vertical
+          gantt.config.grid_width = window.innerWidth * 0.65;
+        } else if (window.innerWidth < 1024) {
+          // Teléfonos en horizontal o tablets
+          gantt.config.grid_width = window.innerWidth * 0.50;
+        } else {
+          // Monitores y pantallas grandes
+          gantt.config.grid_width = 450;
+        }
+      }
+
       gantt.ext.zoom.init(getGanttZoomConfig(gantt));
       gantt.templates.task_class = getTaskClass;
       gantt.config.columns = GANTT_COLUMNS(readonly);

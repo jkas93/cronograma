@@ -29,7 +29,7 @@ export default async function ProtectedLayout({
     .single();
 
   return (
-    <div className="h-screen flex overflow-hidden pb-16 md:pb-0">
+    <div className="h-screen flex overflow-hidden pb-16 md:pb-0 landscape:pb-0">
       {/* Sidebar Modular Contráible */}
       <Sidebar user={user} profile={profile} />
 
@@ -39,7 +39,7 @@ export default async function ProtectedLayout({
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-primary-800/95 backdrop-blur-md border-t border-accent-400/10 z-[100] flex items-center justify-around px-4 py-2 safe-area-bottom shadow-[0_-4px_20px_rgba(0,11,28,0.5)]">
+      <nav className="md:hidden landscape:hidden fixed bottom-0 left-0 right-0 bg-primary-800/95 backdrop-blur-md border-t border-accent-400/10 z-[100] flex items-center justify-around px-4 py-2 safe-area-bottom shadow-[0_-4px_20px_rgba(0,11,28,0.5)]">
         <Link href="/dashboard" className="flex flex-col items-center gap-1 text-accent-400">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />

@@ -58,6 +58,7 @@ export const PulseActivityRow = React.memo(function PulseActivityRow({
   const hasUnsavedChanges = !!(editState?.percent || editState?.notes || (editState?.files && editState.files.length > 0));
   
   const displayPercent = localPercent;
+  const isCompleted = activity.totalProgress >= 100;
 
   const isRestricted = editState?.hasRestriction !== undefined 
     ? editState.hasRestriction 
@@ -69,7 +70,9 @@ export const PulseActivityRow = React.memo(function PulseActivityRow({
 
   const trClass = isRestricted 
     ? 'bg-danger-500/5 hover:bg-danger-500/10 border-l-4 border-l-danger-500 border-b border-surface-700/50 transition-colors group/row'
-    : `hover:bg-surface-800/30 transition-colors border-b border-l-4 border-l-transparent border-surface-700/50 ${hasUnsavedChanges ? 'bg-accent-400/5' : ''} group/row`;
+    : isCompleted
+      ? 'bg-success-500/10 border-l-4 border-l-success-500 border-b border-surface-700/50 transition-colors group/row'
+      : `hover:bg-surface-800/30 transition-colors border-b border-l-4 border-l-transparent border-surface-700/50 ${hasUnsavedChanges ? 'bg-accent-400/5' : ''} group/row`;
 
   return (
     <>
@@ -85,7 +88,15 @@ export const PulseActivityRow = React.memo(function PulseActivityRow({
               </span>
             )}
             <div className="flex flex-col min-w-0">
-              <span className="text-surface-100 font-bold group-hover/row:text-accent-400 transition-colors leading-tight text-xs md:text-sm break-words">{activity.name}</span>
+              <div className="flex items-center gap-2">
+                <span className={`font-bold transition-colors leading-tight text-xs md:text-sm break-words ${isCompleted ? 'text-success-400' : 'text-surface-100 group-hover/row:text-accent-400'}`}>{activity.name}</span>
+                {isCompleted && (
+                  <span className="shrink-0 text-[8px] md:text-[9px] font-black bg-success-500 text-white px-1.5 py-0.5 rounded uppercase tracking-widest shadow-sm flex items-center gap-1">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    Completado
+                  </span>
+                )}
+              </div>
               {hasUnsavedChanges && <span className="text-[9px] md:text-[10px] text-accent-400 font-black uppercase tracking-widest mt-0.5">Pendiente de guardar</span>}
               {/* Acumulado visible solo en móvil (inline) */}
               <div className="flex items-center gap-1.5 mt-1 md:hidden">
@@ -110,7 +121,7 @@ export const PulseActivityRow = React.memo(function PulseActivityRow({
         </td>
 
         {/* Avance Hoy */}
-        <td className="py-2 px-2 md:py-3 md:px-4 bg-accent-400/5">
+        <td className={`py-2 px-2 md:py-3 md:px-4 ${isCompleted ? 'bg-success-500/5' : 'bg-accent-400/5'}`}>
           <div className="flex items-center justify-center gap-1 md:gap-2">
             <div className="relative">
               <input 
@@ -120,7 +131,12 @@ export const PulseActivityRow = React.memo(function PulseActivityRow({
                 value={displayPercent}
                 onChange={(e) => setLocalPercent(e.target.value)}
                 onBlur={handlePercentBlur}
-                className="w-16 h-9 md:w-20 md:h-10 text-center text-sm md:text-base font-black rounded-lg bg-white border border-surface-600 focus:border-accent-400 focus:ring-4 focus:ring-accent-400/20 outline-none transition-all text-surface-100 shadow-sm"
+                disabled={isCompleted}
+                className={`w-16 h-9 md:w-20 md:h-10 text-center text-sm md:text-base font-black rounded-lg border outline-none transition-all shadow-sm ${
+                  isCompleted 
+                    ? 'bg-surface-800 border-surface-700 text-success-500 opacity-70 cursor-not-allowed' 
+                    : 'bg-white border-surface-600 focus:border-accent-400 focus:ring-4 focus:ring-accent-400/20 text-surface-100'
+                }`}
               />
               <span className="absolute -top-2 -right-1 text-[9px] md:text-[10px] bg-accent-500 text-primary-900 px-1 rounded font-black border border-surface-700 shadow-sm">%</span>
             </div>

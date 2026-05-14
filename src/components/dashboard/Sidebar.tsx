@@ -125,7 +125,7 @@ export function Sidebar({ user, profile }: SidebarProps) {
           )}
         </div>
         
-        <form action="/auth/signout" method="POST" className={`w-full ${isCollapsed ? 'flex justify-center' : 'mt-4'}`}>
+        <form action="/api/logout" method="GET" className={`w-full ${isCollapsed ? 'flex justify-center' : 'mt-4'}`}>
           <button
             type="submit"
             title={isCollapsed ? "Cerrar Sesión" : ""}

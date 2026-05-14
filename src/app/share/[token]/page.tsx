@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { ShareContentTabs } from '@/components/project/ShareContentTabs';
+import { FullscreenButton } from '@/components/project/FullscreenButton';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { calculateSCurve } from '@/lib/scurve';
 import { es } from 'date-fns/locale';
@@ -195,10 +196,13 @@ export default async function SharePage({ params }: Props) {
               <p className="text-sm text-surface-200/80 max-w-2xl">{project.description}</p>
             )}
           </div>
-          <div className="flex flex-col gap-2 md:items-end">
-            <span className="px-3 py-1 text-[11px] font-bold tracking-wide uppercase rounded-full bg-accent-400/10 text-accent-500 border border-accent-400/20">
-              Vista de Cliente — Solo Lectura
-            </span>
+          <div className="flex flex-col gap-3 md:items-end">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 text-[11px] font-bold tracking-wide uppercase rounded-full bg-accent-400/10 text-accent-500 border border-accent-400/20">
+                Vista de Cliente — Solo Lectura
+              </span>
+              <FullscreenButton />
+            </div>
             <div className="text-xs text-surface-200/60 font-medium">
               {format(parseISO(effectiveStart), 'dd MMM yyyy', { locale: es })} → {format(parseISO(effectiveEnd), 'dd MMM yyyy', { locale: es })}
             </div>

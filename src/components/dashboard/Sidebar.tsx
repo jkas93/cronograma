@@ -125,9 +125,12 @@ export function Sidebar({ user, profile }: SidebarProps) {
           )}
         </div>
         
-        <form action="/api/logout" method="GET" className={`w-full ${isCollapsed ? 'flex justify-center' : 'mt-4'}`}>
+        <div className={`w-full ${isCollapsed ? 'flex justify-center' : 'mt-4'}`}>
           <button
-            type="submit"
+            onClick={async () => {
+              await fetch('/api/logout', { method: 'GET' });
+              window.location.href = '/login';
+            }}
             title={isCollapsed ? "Cerrar Sesión" : ""}
             className={`text-left text-sm font-medium transition-all text-slate-500 hover:text-danger-400 active:scale-95 flex items-center justify-center group ${
               isCollapsed ? 'w-full h-8 rounded-none p-0 mx-auto hover:bg-transparent' : 'w-full rounded-lg px-4 py-2.5 gap-3 hover:bg-danger-500/10'
@@ -138,7 +141,7 @@ export function Sidebar({ user, profile }: SidebarProps) {
             </svg>
             {!isCollapsed && <span className="whitespace-nowrap fade-in-fast tracking-wide">Cerrar Sesión</span>}
           </button>
-        </form>
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
